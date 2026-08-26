@@ -1,5 +1,9 @@
 import os
 import json
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+
 from flask import Flask, render_template, request, jsonify, Response, redirect, url_for
 from flask_socketio import SocketIO, emit
 

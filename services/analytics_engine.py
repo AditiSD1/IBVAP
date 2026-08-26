@@ -7,20 +7,20 @@ import re
 from datetime import datetime
 import torch
 
+# Limit PyTorch to single thread to conserve CPU/RAM on cloud platforms
+try:
+    torch.set_num_threads(1)
+except Exception:
+    pass
+
 try:
     from ultralytics import YOLO
     HAS_YOLO = True
 except ImportError:
     HAS_YOLO = False
 
-try:
-    import easyocr
-    # Initialize EasyOCR reader (English alphanumeric mode)
-    ocr_reader = easyocr.Reader(['en'], gpu=False)
-    HAS_EASYOCR = True
-except Exception as e:
-    print(f"[ANPR] EasyOCR init warning: {e}")
-    HAS_EASYOCR = False
+ocr_reader = None
+HAS_EASYOCR = True
 
 from config import Config
 
@@ -218,7 +218,15 @@ class AIAnalyticsEngine:
             
         detected_plate = None
 
-        if HAS_EASYOCR:
+        global ocr_reader, HAS_EASYOCR
+        if HAS_EASYOCR and ocr_reader is None:
+            try:
+                import easyocr
+                ocr_reader = easyocr.Reader(['en'], gpu=False)
+            except Exception as e:
+                HAS_EASYOCR = False
+
+        if HAS_EASYOCR and ocr_reader is not None:
             try:
                 results = ocr_reader.readtext(vehicle_crop)
                 for (bbox_ocr, text, prob) in results:

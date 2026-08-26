@@ -143,7 +143,8 @@ class StreamManager:
 
     def start_all_streams(self):
         with self.app.app_context():
-            active_cameras = Camera.query.filter_by(is_active=True).all()
+            # Cap initial background camera workers to max 3 feeds to conserve RAM
+            active_cameras = Camera.query.filter_by(is_active=True).limit(3).all()
             for cam in active_cameras:
                 self.start_stream(cam.id)
 
