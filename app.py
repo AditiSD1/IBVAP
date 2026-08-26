@@ -18,7 +18,7 @@ app.config.from_object(Config)
 
 # Initialize Database & SocketIO
 init_db(app)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent' if 'gevent' in str(type(app)) else 'threading')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 stream_manager.init_app(app, socketio)
 
 # Seed database on startup
