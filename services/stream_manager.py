@@ -46,11 +46,19 @@ class CameraStreamWorker(threading.Thread):
                 time.sleep(5.0)
                 continue
 
-            frame_delay = 1.0 / Config.PROCESSING_TARGET_FPS
+            frame_delay = 0.10  # Smooth 10 FPS streaming target
+            frame_count = 0
+            last_db_fetch = 0
+            cached_camera = None
+            cached_fences = []
+            cached_faces = []
+            cached_plates = []
+            annotated_frame = None
 
             while self.running:
                 loop_start = time.time()
                 ret, frame = cap.read()
+                frame_count += 1
                 
                 # Loop video file continuously for uninterrupted surveillance demo
                 if not ret:
@@ -61,56 +69,59 @@ class CameraStreamWorker(threading.Thread):
                         print(f"[STREAM MANAGER] Stream disconnected for Camera #{self.camera_id}. Reconnecting...")
                         break
 
-                # Fetch fresh DB entities for analytics rules
-                with self.app.app_context():
-                    camera_obj = db.session.get(Camera, self.camera_id)
-                    if not camera_obj or not camera_obj.is_active:
-                        self.running = False
-                        break
-                        
-                    fences_list = VirtualFence.query.filter_by(camera_id=self.camera_id, is_active=True).all()
-                    watchlist_faces = WatchlistFace.query.all()
-                    watchlist_plates = WatchlistPlate.query.all()
+                # Refresh DB entity cache every 3 seconds instead of every frame
+                now = time.time()
+                if now - last_db_fetch > 3.0 or cached_camera is None:
+                    with self.app.app_context():
+                        cached_camera = db.session.get(Camera, self.camera_id)
+                        if not cached_camera or not cached_camera.is_active:
+                            self.running = False
+                            break
+                        cached_fences = VirtualFence.query.filter_by(camera_id=self.camera_id, is_active=True).all()
+                        cached_faces = WatchlistFace.query.all()
+                        cached_plates = WatchlistPlate.query.all()
+                        last_db_fetch = now
 
-                    # Run AI Analytics Engine
+                # Run AI Analytics Engine every 3rd frame to save CPU
+                triggered_alerts = []
+                if frame_count % 3 == 0 or annotated_frame is None:
                     annotated_frame, triggered_alerts = ai_engine.process_camera_frame(
-                        camera_obj, fences_list, watchlist_faces, watchlist_plates, frame
+                        cached_camera, cached_fences, cached_faces, cached_plates, frame
                     )
+                
+                # Handle Triggered Alerts
+                if triggered_alerts:
+                    with self.app.app_context():
+                        for alert_data in triggered_alerts:
+                            ts_str = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+                            snap_filename = f"alert_cam{self.camera_id}_{ts_str}.jpg"
+                            snap_full_path = os.path.join(Config.SNAPSHOT_DIR, snap_filename)
+                            snap_relative_path = f"/static/snapshots/{snap_filename}"
+                            
+                            cv2.imwrite(snap_full_path, annotated_frame)
 
-                    # Handle Triggered Alerts
-                    for alert_data in triggered_alerts:
-                        # Save snapshot image
-                        ts_str = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
-                        snap_filename = f"alert_cam{self.camera_id}_{ts_str}.jpg"
-                        snap_full_path = os.path.join(Config.SNAPSHOT_DIR, snap_filename)
-                        snap_relative_path = f"/static/snapshots/{snap_filename}"
-                        
-                        cv2.imwrite(snap_full_path, annotated_frame)
+                            alert_record = Alert(
+                                camera_id=self.camera_id,
+                                event_type=alert_data['event_type'],
+                                severity=alert_data['severity'],
+                                description=alert_data['description'],
+                                snapshot_path=snap_relative_path,
+                                status='UNACKNOWLEDGED'
+                            )
+                            db.session.add(alert_record)
+                            db.session.commit()
 
-                        # Create DB Alert record
-                        alert_record = Alert(
-                            camera_id=self.camera_id,
-                            event_type=alert_data['event_type'],
-                            severity=alert_data['severity'],
-                            description=alert_data['description'],
-                            snapshot_path=snap_relative_path,
-                            status='UNACKNOWLEDGED'
-                        )
-                        db.session.add(alert_record)
-                        db.session.commit()
-
-                        # Broadcast alert via Socket.IO WebSocket to all connected clients
-                        alert_dict = alert_record.to_dict()
-                        self.socketio.emit('new_alert', alert_dict)
-                        print(f"[ALERT TRIGGERED] Camera #{self.camera_id}: {alert_data['event_type']} ({alert_data['severity']})")
+                            alert_dict = alert_record.to_dict()
+                            self.socketio.emit('new_alert', alert_dict)
+                            print(f"[ALERT TRIGGERED] Camera #{self.camera_id}: {alert_data['event_type']} ({alert_data['severity']})")
 
                 # Store frames in memory for HTTP MJPEG streaming
                 with self.lock:
                     self.latest_raw_frame = frame
-                    self.latest_processed_frame = annotated_frame
+                    self.latest_processed_frame = annotated_frame if annotated_frame is not None else frame
 
                 elapsed = time.time() - loop_start
-                sleep_time = max(0.01, frame_delay - elapsed)
+                sleep_time = max(0.02, frame_delay - elapsed)
                 time.sleep(sleep_time)
 
             cap.release()
