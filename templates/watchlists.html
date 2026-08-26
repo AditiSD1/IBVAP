@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}IBVAP - FRS & ANPR Target Watchlists{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="fa-solid fa-user-secret text-warning me-2"></i> Watchlist Database & Target Registry</h4>
+        <p class="text-muted small mb-0">Register suspect vehicle license plates (ANPR) and facial profiles (FRS) for automated alert matching</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- ANPR License Plate Watchlist (Left) -->
+    <div class="col-lg-6">
+        <div class="card-tactical">
+            <div class="card-header-tactical">
+                <span><i class="fa-solid fa-car me-2 text-info"></i> ANPR VEHICLE LICENSE PLATE WATCHLIST</span>
+                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#addPlateModal">
+                    <i class="fa-solid fa-plus me-1"></i> Register Plate
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="border-bottom border-secondary text-muted">
+                                <th>Plate Number</th>
+                                <th>Threat Level</th>
+                                <th>Vehicle Description</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in plates %}
+                            <tr>
+                                <td class="fw-bold text-warning font-monospace fs-6">{{ p.plate_number }}</td>
+                                <td><span class="badge ${p.threat_level == 'CRITICAL' ? 'badge-critical' : 'badge-high'}">{{ p.threat_level }}</span></td>
+                                <td class="small">{{ p.vehicle_info }} <br><span class="text-muted">{{ p.description }}</span></td>
+                                <td>
+                                    <button onclick="deletePlate({{ p.id }})" class="btn btn-sm btn-outline-danger py-0 px-2"><i class="fa-solid fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-3 text-muted">No license plates registered in watchlist.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FRS Facial Recognition Watchlist (Right) -->
+    <div class="col-lg-6">
+        <div class="card-tactical">
+            <div class="card-header-tactical">
+                <span><i class="fa-solid fa-user-ninja me-2 text-warning"></i> FRS FACIAL RECOGNITION WATCHLIST</span>
+                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#addFaceModal">
+                    <i class="fa-solid fa-plus me-1"></i> Register Target Face
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover align-middle mb-0">
+                        <thead>
+                            <tr class="border-bottom border-secondary text-muted">
+                                <th>Target Person Name</th>
+                                <th>Category</th>
+                                <th>Date Registered</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for f in faces %}
+                            <tr>
+                                <td class="fw-bold text-light">{{ f.person_name }}</td>
+                                <td><span class="badge bg-danger">{{ f.category }}</span></td>
+                                <td class="small text-muted font-monospace">{{ f.created_at.strftime('%Y-%m-%d') }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center py-3 text-muted">No suspect face profiles registered.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Plate Modal -->
+<div class="modal fade" id="addPlateModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title"><i class="fa-solid fa-car me-2 text-info"></i> Register Suspect License Plate</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addPlateForm">
+                    <div class="mb-3">
+                        <label class="form-label">License Plate Number</label>
+                        <input type="text" id="plateNum" class="form-control bg-secondary text-light border-dark font-monospace text-uppercase" placeholder="e.g. JK-02-C-9988" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Vehicle Info & Make</label>
+                        <input type="text" id="vehicleInfo" class="form-control bg-secondary text-light border-dark" placeholder="e.g. Black SUV / Truck">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Threat Level</label>
+                        <select id="threatLevel" class="form-select bg-secondary text-light border-dark">
+                            <option value="CRITICAL">CRITICAL</option>
+                            <option value="HIGH">HIGH</option>
+                            <option value="MEDIUM">MEDIUM</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes / Threat Description</label>
+                        <textarea id="plateDesc" class="form-control bg-secondary text-light border-dark" rows="2" placeholder="Reason for flag..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-info w-100 fw-bold">Register License Plate</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Face Modal -->
+<div class="modal fade" id="addFaceModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title"><i class="fa-solid fa-user-ninja me-2 text-warning"></i> Register Target Facial Profile</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addFaceForm">
+                    <div class="mb-3">
+                        <label class="form-label">Person Name / Alias</label>
+                        <input type="text" id="faceName" class="form-control bg-secondary text-light border-dark" placeholder="e.g. Target Alpha" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category</label>
+                        <select id="faceCategory" class="form-select bg-secondary text-light border-dark">
+                            <option value="INFILTRATOR">INFILTRATOR</option>
+                            <option value="SUSPECT">SUSPECT</option>
+                            <option value="PERSON_OF_INTEREST">PERSON OF INTEREST</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100 fw-bold">Register Target Face Profile</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.getElementById('addPlateForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const payload = {
+        plate_number: document.getElementById('plateNum').value,
+        vehicle_info: document.getElementById('vehicleInfo').value,
+        threat_level: document.getElementById('threatLevel').value,
+        description: document.getElementById('plateDesc').value
+    };
+    fetch('/api/watchlists/plates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    }).then(() => window.location.reload());
+});
+
+document.getElementById('addFaceForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const payload = {
+        person_name: document.getElementById('faceName').value,
+        category: document.getElementById('faceCategory').value
+    };
+    fetch('/api/watchlists/faces', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    }).then(() => window.location.reload());
+});
+
+function deletePlate(id) {
+    fetch(`/api/watchlists/plates/${id}`, { method: 'DELETE' })
+    .then(() => window.location.reload());
+}
+</script>
+{% endblock %}

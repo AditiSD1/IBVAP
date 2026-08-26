@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+
+{% block title %}IBVAP - Camera Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="fa-solid fa-video text-success me-2"></i> Surveillance Camera Infrastructure</h4>
+        <p class="text-muted small mb-0">Transform standard IP/RTSP CCTV cameras into intelligent border security nodes</p>
+    </div>
+    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCameraModal">
+        <i class="fa-solid fa-plus me-1"></i> Connect New Camera Feed
+    </button>
+</div>
+
+<div class="card-tactical">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead>
+                    <tr class="border-bottom border-secondary text-muted">
+                        <th>ID</th>
+                        <th>Camera Name</th>
+                        <th>BOP / Location</th>
+                        <th>Stream Connection / URL</th>
+                        <th>Type</th>
+                        <th>Night Vision Mode</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cam in cameras %}
+                    <tr>
+                        <td class="fw-bold text-muted">#{{ cam.id }}</td>
+                        <td class="fw-bold text-light">{{ cam.name }}</td>
+                        <td><span class="badge bg-secondary">{{ cam.location }}</span></td>
+                        <td class="font-monospace small text-truncate" style="max-width: 250px;">{{ cam.stream_url }}</td>
+                        <td><span class="badge bg-dark border border-info text-info">{{ cam.camera_type }}</span></td>
+                        <td>
+                            <button onclick="toggleNightMode({{ cam.id }}, this)" class="btn btn-sm {% if cam.night_mode %}btn-warning{% else %}btn-outline-secondary{% endif %}">
+                                <i class="fa-solid fa-moon me-1"></i> {% if cam.night_mode %}IR Night Enabled{% else %}Day Mode{% endif %}
+                            </button>
+                        </td>
+                        <td>
+                            {% if cam.is_active %}
+                            <span class="badge bg-success"><i class="fa-solid fa-circle me-1 small"></i> STREAMING</span>
+                            {% else %}
+                            <span class="badge bg-secondary">INACTIVE</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="/virtual_fences?camera_id={{ cam.id }}" class="btn btn-sm btn-outline-info me-1" title="Configure Virtual Fence">
+                                <i class="fa-solid fa-draw-polygon"></i> Fences
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">No cameras registered.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Camera Modal -->
+<div class="modal fade" id="addCameraModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title"><i class="fa-solid fa-video me-2 text-success"></i> Add CCTV Stream Node</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addCameraForm">
+                    <div class="mb-3">
+                        <label class="form-label">Camera Name</label>
+                        <input type="text" id="camName" class="form-control bg-secondary text-light border-dark" placeholder="e.g. BOP Delta Gate Camera" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Location / Border Out Post</label>
+                        <input type="text" id="camLocation" class="form-control bg-secondary text-light border-dark" placeholder="e.g. Sector 4 Border Wall" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Stream Source Type</label>
+                        <select id="camType" class="form-select bg-secondary text-light border-dark" onchange="updateStreamInputPlaceholder()">
+                            <option value="IP_RTSP">IP Camera (RTSP Stream URL)</option>
+                            <option value="USB_WEBCAM">USB Webcam (Index 0, 1)</option>
+                            <option value="FILE">Local MP4 / AVI Video File</option>
+                            <option value="SYNTHETIC">Pre-Built Border Test Stream</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Stream Connection String / URL</label>
+                        <input type="text" id="camUrl" class="form-control bg-secondary text-light border-dark" placeholder="rtsp://admin:pass@192.168.1.100:554/live" required>
+                        <div class="form-text text-muted small" id="camUrlHelp">Enter full RTSP stream URL or video file path.</div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input type="checkbox" id="camNightMode" class="form-check-input">
+                        <label class="form-check-label">Enable Low-Light IR Night Enhancement</label>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Add Camera Feed</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function updateStreamInputPlaceholder() {
+    const type = document.getElementById('camType').value;
+    const input = document.getElementById('camUrl');
+    const help = document.getElementById('camUrlHelp');
+    if (type === 'IP_RTSP') {
+        input.placeholder = 'rtsp://admin:pass@192.168.1.100:554/stream1';
+        help.innerText = 'RTSP/HTTP IP Camera URL';
+    } else if (type === 'USB_WEBCAM') {
+        input.placeholder = '0';
+        help.innerText = 'Device index (0 for primary webcam)';
+    } else if (type === 'FILE') {
+        input.placeholder = 'C:/path/to/border_video.mp4';
+        help.innerText = 'Absolute file path to video file';
+    } else {
+        input.placeholder = 'SYNTHETIC_INTRUSION';
+        help.innerText = 'SYNTHETIC_INTRUSION, SYNTHETIC_ANPR, or SYNTHETIC_LOITERING';
+    }
+}
+
+function toggleNightMode(camId, btn) {
+    fetch(`/api/cameras/${camId}/toggle_night`, { method: 'PUT' })
+    .then(r => r.json())
+    .then(data => {
+        window.location.reload();
+    });
+}
+
+document.getElementById('addCameraForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const payload = {
+        name: document.getElementById('camName').value,
+        location: document.getElementById('camLocation').value,
+        camera_type: document.getElementById('camType').value,
+        stream_url: document.getElementById('camUrl').value,
+        night_mode: document.getElementById('camNightMode').checked
+    };
+    fetch('/api/cameras', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    }).then(r => r.json()).then(() => window.location.reload());
+});
+</script>
+{% endblock %}

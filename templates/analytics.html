@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+
+{% block title %}IBVAP - Command Analytics & Intelligence Hub{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold mb-1"><i class="fa-solid fa-chart-pie text-success me-2"></i> Command Analytics & Threat Intelligence</h4>
+        <p class="text-muted small mb-0">Statistical threat summaries, intrusion frequency metrics, and exportable intelligence reports</p>
+    </div>
+    <button class="btn btn-outline-success" onclick="window.print()">
+        <i class="fa-solid fa-print me-1"></i> Print / Save Command PDF Report
+    </button>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="row g-4 mb-4">
+    <!-- Event Breakdown Chart (Donut) -->
+    <div class="col-lg-6">
+        <div class="card-tactical">
+            <div class="card-header-tactical">
+                <span><i class="fa-solid fa-chart-donut me-2 text-info"></i> THREAT EVENT TYPE BREAKDOWN</span>
+            </div>
+            <div class="card-body p-4 text-center">
+                <div style="max-height: 280px;" class="d-flex justify-content-center">
+                    <canvas id="eventBreakdownChart" width="280" height="280"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Threat Severity Breakdown Chart (Bar) -->
+    <div class="col-lg-6">
+        <div class="card-tactical">
+            <div class="card-header-tactical">
+                <span><i class="fa-solid fa-chart-column me-2 text-warning"></i> SECURITY METRICS OVERVIEW</span>
+            </div>
+            <div class="card-body p-4">
+                <canvas id="severityChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Command Summary Table -->
+<div class="card-tactical">
+    <div class="card-header-tactical">
+        <span><i class="fa-solid fa-clipboard-check me-2 text-success"></i> STRATEGIC INSTALLATION SURVEILLANCE STATUS</span>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-dark table-hover mb-0 align-middle">
+            <thead>
+                <tr class="text-muted border-bottom border-secondary">
+                    <th>Metric Parameter</th>
+                    <th>Value / Status</th>
+                    <th>Intelligence Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="fw-bold text-light">Total CCTV Nodes Integrated</td>
+                    <td><span class="badge bg-secondary" id="sumTotalCams">--</span></td>
+                    <td class="small text-muted">Standard IP / RTSP / Simulated camera feeds</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold text-light">Active AI Stream Analytics Workers</td>
+                    <td><span class="badge bg-success" id="sumActiveCams">--</span></td>
+                    <td class="small text-muted">Real-time object tracking & fence collision active</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold text-light">Critical Incident Alerts</td>
+                    <td><span class="badge badge-critical" id="sumCriticalAlerts">--</span></td>
+                    <td class="small text-muted">Perimeter fence breaches & ANPR target matches</td>
+                </tr>
+                <tr>
+                    <td class="fw-bold text-light">Hardware Upgrade Cost Saved</td>
+                    <td><span class="badge bg-success">100% Software-Defined</span></td>
+                    <td class="small text-muted">Eliminates need for proprietary smart FRS/ANPR camera hardware</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    fetch('/api/analytics/summary')
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('sumTotalCams').innerText = data.total_cameras;
+        document.getElementById('sumActiveCams').innerText = data.active_cameras;
+        document.getElementById('sumCriticalAlerts').innerText = data.critical_alerts;
+
+        // Render Event Breakdown Donut Chart
+        const ctxDonut = document.getElementById('eventBreakdownChart').getContext('2d');
+        new Chart(ctxDonut, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(data.event_breakdown),
+                datasets: [{
+                    data: Object.values(data.event_breakdown),
+                    backgroundColor: ['#ff3366', '#ff9900', '#00d2ff', '#00ff88'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { color: '#e2e8f0' } }
+                }
+            }
+        });
+
+        // Render Severity Bar Chart
+        const ctxBar = document.getElementById('severityChart').getContext('2d');
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: ['Total Incidents', 'Unacknowledged', 'Critical Threats', 'Active Cameras'],
+                datasets: [{
+                    label: 'System Count',
+                    data: [data.total_alerts, data.unack_alerts, data.critical_alerts, data.active_cameras],
+                    backgroundColor: ['#00d2ff', '#ff9900', '#ff3366', '#00ff88']
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { ticks: { color: '#94a3b8' }, grid: { color: '#233354' } },
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: '#233354' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

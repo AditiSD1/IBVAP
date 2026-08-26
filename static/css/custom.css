@@ -1,0 +1,176 @@
+:root {
+    --bg-dark: #0a0f1d;
+    --bg-card: #131c31;
+    --bg-card-hover: #1a2642;
+    --border-color: #233354;
+    --accent-green: #00ff88;
+    --accent-blue: #00d2ff;
+    --accent-red: #ff3366;
+    --accent-orange: #ff9900;
+    --text-main: #e2e8f0;
+    --text-muted: #94a3b8;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar-tactical {
+    background-color: #070b14;
+    border-bottom: 2px solid var(--border-color);
+    padding: 0.75rem 1.5rem;
+}
+
+.brand-title {
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: var(--accent-green);
+    text-transform: uppercase;
+}
+
+.nav-link-tactical {
+    color: var(--text-muted);
+    font-weight: 600;
+    margin: 0 0.4rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.nav-link-tactical:hover, .nav-link-tactical.active {
+    color: #ffffff;
+    background-color: var(--border-color);
+}
+
+.card-tactical {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    margin-bottom: 1.5rem;
+}
+
+.card-header-tactical {
+    background-color: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.85rem 1.25rem;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-card {
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.stat-val {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-top: 0.5rem;
+}
+
+/* Severity Badges */
+.badge-critical {
+    background-color: rgba(255, 51, 102, 0.2);
+    color: var(--accent-red);
+    border: 1px solid var(--accent-red);
+    animation: pulse-red 2s infinite;
+}
+
+.badge-high {
+    background-color: rgba(255, 153, 0, 0.2);
+    color: var(--accent-orange);
+    border: 1px solid var(--accent-orange);
+}
+
+.badge-medium {
+    background-color: rgba(0, 210, 255, 0.2);
+    color: var(--accent-blue);
+    border: 1px solid var(--accent-blue);
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(255, 51, 102, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 51, 102, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 51, 102, 0); }
+}
+
+/* Video Grid Stream Container */
+.video-stream-box {
+    position: relative;
+    background-color: #000;
+    border-radius: 6px;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+}
+
+.video-stream-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+}
+
+.video-overlay-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Alert Ticker Sidebar */
+.alert-ticker-container {
+    max-height: 520px;
+    overflow-y: auto;
+}
+
+.alert-item-card {
+    background-color: rgba(255, 255, 255, 0.02);
+    border-left: 4px solid var(--accent-blue);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.85rem;
+    transition: background 0.2s;
+}
+
+.alert-item-card.CRITICAL {
+    border-left-color: var(--accent-red);
+    background-color: rgba(255, 51, 102, 0.05);
+}
+
+.alert-item-card.HIGH {
+    border-left-color: var(--accent-orange);
+}
+
+.alert-item-card:hover {
+    background-color: var(--bg-card-hover);
+}
+
+/* Notification Bell Pulse */
+.bell-notify {
+    position: relative;
+    cursor: pointer;
+}
+
+.bell-badge {
+    position: absolute;
+    top: -5px;
+    right: -8px;
+    background-color: var(--accent-red);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 10px;
+}

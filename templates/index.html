@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}IBVAP - Tactical C2 Command Dashboard{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card-tactical stat-card">
+            <div>
+                <span class="text-muted small text-uppercase fw-bold">Active Camera Feeds</span>
+                <div class="stat-val text-success">{{ cameras|length }}</div>
+            </div>
+            <i class="fa-solid fa-video-slash fs-1 text-muted opacity-25"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-tactical stat-card">
+            <div>
+                <span class="text-muted small text-uppercase fw-bold">Live Virtual Fences</span>
+                <div class="stat-val text-info">
+                    {% set total_fences = [] %}
+                    {% for cam in cameras %}{% set _ = total_fences.append(cam.fences|length) %}{% endfor %}
+                    {{ total_fences|sum }}
+                </div>
+            </div>
+            <i class="fa-solid fa-shield-cat fs-1 text-muted opacity-25"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-tactical stat-card">
+            <div>
+                <span class="text-muted small text-uppercase fw-bold">Unacknowledged Alerts</span>
+                <div class="stat-val text-warning" id="stat-unack-alerts">{{ unack_alerts_count }}</div>
+            </div>
+            <i class="fa-solid fa-triangle-exclamation fs-1 text-warning opacity-50"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card-tactical stat-card">
+            <div>
+                <span class="text-muted small text-uppercase fw-bold">AI Analytics Core</span>
+                <div class="stat-val text-success" style="font-size: 1.4rem;">ONLINE</div>
+            </div>
+            <i class="fa-solid fa-brain fs-1 text-success opacity-50"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Main Grid: Camera Video Streams (Left) + Live Alert Stream (Right) -->
+<div class="row g-3">
+    <!-- Multi-Camera Stream Grid -->
+    <div class="col-lg-8">
+        <div class="card-tactical">
+            <div class="card-header-tactical">
+                <span><i class="fa-solid fa-border-all me-2 text-success"></i> LIVE CCTV SURVEILLANCE MATRIX</span>
+                <div class="btn-group btn-group-sm">
+                    <button type="button" class="btn btn-outline-secondary active">Multi-Grid</button>
+                    <a href="/cameras" class="btn btn-outline-secondary">Manage Streams</a>
+                </div>
+            </div>
+            <div class="card-body p-3">
+                <div class="row g-3">
+                    {% for cam in cameras %}
+                    <div class="col-md-6">
+                        <div class="video-stream-box">
+                            <img src="/api/stream/{{ cam.id }}" alt="{{ cam.name }}" loading="eager">
+                            <div class="video-overlay-badge d-flex justify-content-between align-items-center w-100 pe-3">
+                                <span>
+                                    <i class="fa-solid fa-circle text-danger me-1 small animate-pulse"></i>
+                                    {{ cam.name }}
+                                </span>
+                                <span class="badge bg-dark border border-secondary text-info">
+                                    {% if cam.night_mode %}<i class="fa-solid fa-moon text-warning"></i> NIGHT IR{% else %}<i class="fa-solid fa-sun text-warning"></i> DAY{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-1 px-1">
+                            <small class="text-muted"><i class="fa-solid fa-location-dot me-1"></i> {{ cam.location }}</small>
+                            <small class="text-success"><i class="fa-solid fa-bolt me-1"></i> {{ cam.fences|length }} Active Fences</small>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="col-12 text-center py-5 text-muted">
+                        <i class="fa-solid fa-video-slash fs-1 mb-2"></i>
+                        <p>No active camera streams configured. Click "Manage Streams" to add IP/RTSP feeds.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Real-Time Security Alert Ticker -->
+    <div class="col-lg-4">
+        <div class="card-tactical">
+            <div class="card-header-tactical">
+                <span class="text-danger"><i class="fa-solid fa-bell me-2"></i> REAL-TIME SECURITY ALERTS</span>
+                <span class="badge bg-danger">LIVE FEED</span>
+            </div>
+            <div class="card-body p-0">
+                <div id="live-alert-ticker" class="alert-ticker-container">
+                    <div class="text-center text-muted py-4 small">
+                        <i class="fa-solid fa-radar fa-spin me-2"></i> AI Surveillance Engine active. Listening for perimeter breaches & target matches...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
